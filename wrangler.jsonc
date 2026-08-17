@@ -1,8 +1,8 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "promptlens-ai",
-  "main": "cloudflare-worker.ts",
-  "compatibility_date": "2024-09-23",
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "image-to-prompt",
+  "main": "worker.ts",
+  "compatibility_date": "2026-08-17",
   "compatibility_flags": ["nodejs_compat"],
   "ai": {
     "binding": "AI"

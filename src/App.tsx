@@ -357,7 +357,11 @@ const AppContent: React.FC = () => {
 
       return (
         <div className="min-h-screen py-12">
-          <SEOHead title={`${titles[cleanSlug]} – PromptLens AI`} canonicalPath={`/${cleanSlug}`} />
+          <SEOHead
+            title={`${titles[cleanSlug]} – PromptLens AI`}
+            description={`Information, policies, and details about PromptLens AI: ${titles[cleanSlug]}.`}
+            canonicalPath={`/${cleanSlug}`}
+          />
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <h1 className="text-3xl font-bold text-slate-900 mb-6">{titles[cleanSlug]}</h1>
             <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 space-y-4 text-sm text-slate-700 leading-relaxed shadow-sm">

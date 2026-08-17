@@ -28,6 +28,7 @@ import {
 import type { GeneratedPromptResponse, GenerationOptions, HistoryItem } from '../types.ts';
 import { saveHistoryItem } from '../lib/history.ts';
 import { useToast } from '../components/Toast.tsx';
+import { analyzeImage } from '../services/vision/index.ts';
 
 interface SeoLandingPageProps {
   slug: string;
@@ -73,40 +74,12 @@ export const SeoLandingPage: React.FC<SeoLandingPageProps> = ({ slug }) => {
     setLastOptions(options);
 
     try {
-      let response: Response;
-
-      if (file) {
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('mode', options.mode);
-        formData.append('targetModel', options.targetModel);
-        formData.append('detailLevel', options.detailLevel);
-        formData.append('includeNegative', String(options.includeNegative));
-        formData.append('language', options.language);
-
-        response = await fetch('/api/generate', {
-          method: 'POST',
-          body: formData,
-        });
-      } else if (base64) {
-        response = await fetch('/api/generate-base64', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageBase64: base64,
-            ...options,
-          }),
-        });
-      } else {
-        throw new Error('No image provided');
+      const imageInput = file || base64;
+      if (!imageInput) {
+        throw new Error('Please upload an image or provide valid image data.');
       }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server responded with ${response.status}`);
-      }
-
-      const data: GeneratedPromptResponse = await response.json();
+      const data = await analyzeImage(imageInput, options);
       setResult(data);
 
       saveHistoryItem({

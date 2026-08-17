@@ -4,7 +4,7 @@ import type {
   SupportedLanguage,
   TargetModel,
   VisionAnalysisResult,
-} from '../../src/types.ts';
+} from '../../types.ts';
 
 export interface EngineeredPromptResult {
   fullPrompt: string;
@@ -148,7 +148,13 @@ export class PromptEngine {
     if (analysis.cameraAngle) parts.push(analysis.cameraAngle);
     if (analysis.perspectiveAndShotType) parts.push(analysis.perspectiveAndShotType);
 
-    if (mode === 'photorealistic' || mode === 'portrait' || mode === 'cinematic' || mode === 'fashion' || mode === 'product') {
+    if (
+      mode === 'photorealistic' ||
+      mode === 'portrait' ||
+      mode === 'cinematic' ||
+      mode === 'fashion' ||
+      mode === 'product'
+    ) {
       if (analysis.apparentFocalLength) parts.push(`shot on ${analysis.apparentFocalLength}`);
       if (analysis.depthOfField) parts.push(analysis.depthOfField);
       if (analysis.focusPoint) parts.push(analysis.focusPoint);
@@ -240,7 +246,11 @@ export class PromptEngine {
     const ar = aspectRatio || (mode === 'cinematic' ? '16:9' : mode === 'portrait' ? '4:5' : '16:9');
 
     if (targetModel === 'midjourney_v6' || mode === 'midjourney') {
-      const isPhoto = mode === 'photorealistic' || mode === 'portrait' || mode === 'product' || mode === 'fashion';
+      const isPhoto =
+        mode === 'photorealistic' ||
+        mode === 'portrait' ||
+        mode === 'product' ||
+        mode === 'fashion';
       return `--ar ${ar} --v 6.1 ${isPhoto ? '--style raw ' : ''}--stylize 150 --q 2`;
     }
 
@@ -255,7 +265,7 @@ export class PromptEngine {
     return '';
   }
 
-  private buildNegativePrompt(mode: PromptMode, targetModel: TargetModel): string {
+  private buildNegativePrompt(mode: PromptMode, _targetModel: TargetModel): string {
     const baseNegative =
       'deformed, distorted, disfigured, poorly drawn, bad anatomy, wrong anatomy, extra limb, missing limb, floating limbs, disconnected limbs, mutation, mutated, ugly, disgusting, blurry, amputation, low quality, artifacts, watermark, signature, username, text overlay';
 
@@ -275,7 +285,6 @@ export class PromptEngine {
   }
 
   private translatePrompt(prompt: string, targetLanguage: SupportedLanguage): string {
-    // Helpful localized prefix/framing
     switch (targetLanguage) {
       case 'es':
         return `[Español] ${prompt}`;
