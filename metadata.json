@@ -1,0 +1,6 @@
+{
+  "name": "PromptLens AI",
+  "description": "Production-ready AI image to prompt SaaS generator. Turn any image or photo into detailed, high-fidelity AI prompts for Midjourney, Flux, Stable Diffusion, and ChatGPT using Cloudflare Workers AI LLaVA vision analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
