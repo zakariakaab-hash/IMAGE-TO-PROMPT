@@ -3,14 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-    <meta name="description" content="An application built with Google AI Studio." />
-    <meta property="og:title" content="My Google AI Studio App" />
-    <meta property="og:description" content="An application built with Google AI Studio." />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <title>PromptLens AI – Image to Prompt Generator</title>
+    <meta name="description" content="Reverse engineer any image into high-fidelity AI prompts for Midjourney, Flux, SDXL, and ChatGPT with Cloudflare Workers AI." />
+    <script>
+      // Compatibility shim for iframe/sandbox environments where window.fetch only has a getter
+      (function() {
+        try {
+          const globalObj = typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : self;
+          let currentFetch = globalObj.fetch ? globalObj.fetch.bind(globalObj) : null;
+          Object.defineProperty(globalObj, 'fetch', {
+            get: function() {
+              return currentFetch;
+            },
+            set: function(fn) {
+              currentFetch = fn;
+            },
+            configurable: true,
+            enumerable: true,
+          });
+        } catch (e) {
+          // Ignore if already configurable or restricted
+        }
+      })();
+    </script>
   </head>
-  <body>
+  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

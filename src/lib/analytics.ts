@@ -17,7 +17,7 @@ export type AnalyticsEvent =
 
 export function trackEvent(event: AnalyticsEvent, properties?: Record<string, unknown>): void {
   // Safe console telemetry / ready for Cloudflare Web Analytics / custom beacon
-  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  if (typeof window !== 'undefined' && import.meta.env.DEV) {
     console.debug(`[Analytics Event] ${event}`, properties || {});
   }
 }
