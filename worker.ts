@@ -273,7 +273,17 @@ Please deconstruct this image completely and return only the valid JSON.`;
         );
       } catch (err: unknown) {
         console.error('Cloudflare Workers AI processing error:', err);
-        const message = err instanceof Error ? err.message : 'Analysis failed on Cloudflare Workers AI';
+        let message = err instanceof Error ? err.message : 'Analysis failed on Cloudflare Workers AI';
+        
+        // Catch Cloudflare Workers AI 3006 Request too large error or model payload limits
+        if (message.includes('3006') || message.toLowerCase().includes('request is too large') || message.toLowerCase().includes('too large')) {
+          message = 'Image is too large for AI processing. Please upload a smaller image or try again.';
+          return new Response(
+            JSON.stringify({ success: false, error: message }),
+            { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         return new Response(
           JSON.stringify({ success: false, error: message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

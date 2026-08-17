@@ -11,6 +11,7 @@ import {
   Camera,
   Layers,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
 import type {
   DetailLevel,
@@ -21,6 +22,7 @@ import type {
 } from '../types.ts';
 import { useToast } from './Toast.tsx';
 import { trackEvent } from '../lib/analytics.ts';
+import { optimizeImageForAI } from '../lib/imageOptimizer.ts';
 
 interface ImageUploadZoneProps {
   onGenerate: (imageFile: File | null, imageBase64: string | null, options: GenerationOptions) => void;
@@ -42,9 +44,10 @@ export const ImageUploadZone: React.FC<ImageUploadZoneProps> = ({
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [fileDetails, setFileDetails] = useState<{ name: string; size: string; dimensions?: string } | null>(null);
+  const [fileDetails, setFileDetails] = useState<{ name: string; size: string; dimensions?: string; optimized?: boolean } | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [optimizingStatus, setOptimizingStatus] = useState<string | null>(null);
 
   // Generation options
   const [mode, setMode] = useState<PromptMode>(initialMode);
@@ -181,7 +184,7 @@ export const ImageUploadZone: React.FC<ImageUploadZoneProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!previewUrl && !selectedFile) {
       setErrorMessage('Please upload or paste an image first.');
@@ -200,20 +203,47 @@ export const ImageUploadZone: React.FC<ImageUploadZoneProps> = ({
 
     trackEvent('prompt_generated', { mode, targetModel });
 
-    if (selectedFile) {
-      onGenerate(selectedFile, null, options);
-    } else if (previewUrl?.startsWith('data:')) {
-      onGenerate(null, previewUrl, options);
-    } else if (previewUrl?.startsWith('http')) {
-      fetch(previewUrl)
-        .then((res) => res.blob())
-        .then((blob) => {
-          const file = new File([blob], 'reference.jpg', { type: blob.type || 'image/jpeg' });
-          onGenerate(file, null, options);
-        })
-        .catch(() => {
-          onGenerate(null, previewUrl, options);
-        });
+    try {
+      let fileToSend: File | null = selectedFile;
+
+      if (!fileToSend && previewUrl?.startsWith('http')) {
+        try {
+          const res = await fetch(previewUrl);
+          const blob = await res.blob();
+          fileToSend = new File([blob], 'reference.jpg', { type: blob.type || 'image/jpeg' });
+        } catch {
+          // fallback to passing data url
+        }
+      }
+
+      if (fileToSend) {
+        // Optimize large images / phone photos proportionally before sending to Cloudflare LLaVA
+        const origSize = fileToSend.size;
+        const needsOptimization = origSize > 1.2 * 1024 * 1024;
+        
+        if (needsOptimization) {
+          setOptimizingStatus('Optimizing image for AI analysis…');
+        }
+
+        const optimization = await optimizeImageForAI(
+          fileToSend,
+          { maxDimension: 1536, maxBytes: 1.2 * 1024 * 1024 },
+          (status) => setOptimizingStatus(status)
+        );
+
+        setOptimizingStatus(null);
+        onGenerate(optimization.file, null, options);
+      } else if (previewUrl) {
+        onGenerate(null, previewUrl, options);
+      }
+    } catch (err: unknown) {
+      setOptimizingStatus(null);
+      console.warn('Image optimization warning, passing original input:', err);
+      if (selectedFile) {
+        onGenerate(selectedFile, null, options);
+      } else if (previewUrl) {
+        onGenerate(null, previewUrl, options);
+      }
     }
   };
 
@@ -495,22 +525,40 @@ export const ImageUploadZone: React.FC<ImageUploadZoneProps> = ({
       {/* Footer Info & Generate CTA matching Professional Polish */}
       <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
         <div className="flex items-center space-x-2">
-          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-          <span className="text-slate-600 font-medium">Cloudflare Workers AI Powered</span>
+          {optimizingStatus ? (
+            <div className="flex items-center gap-2 text-indigo-600 font-medium">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>{optimizingStatus}</span>
+            </div>
+          ) : (
+            <>
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+              <span className="text-slate-600 font-medium">Cloudflare Workers AI Powered</span>
+            </>
+          )}
         </div>
 
         <button
           type="submit"
           id="generate-prompt-submit-btn"
-          disabled={isLoading || (!previewUrl && !selectedFile)}
+          disabled={isLoading || Boolean(optimizingStatus) || (!previewUrl && !selectedFile)}
           className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            isLoading || (!previewUrl && !selectedFile)
+            isLoading || Boolean(optimizingStatus) || (!previewUrl && !selectedFile)
               ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
               : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
           }`}
         >
-          <Sparkles className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          <span>{isLoading ? 'Analyzing Visuals...' : 'Generate AI Prompt'}</span>
+          {optimizingStatus ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Optimizing Image…</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>{isLoading ? 'Analyzing Visuals...' : 'Generate AI Prompt'}</span>
+            </>
+          )}
         </button>
       </div>
     </form>
